@@ -15,8 +15,11 @@ san_norm <- mutate(san,
                     ifelse(grepl('PROSTITUTION',Category),1,0.1)
             ),
         time_of_day =as.POSIXct(Time, format='%H:%M'),
-        night = ifelse(time_of_day>as.POSIXct('05:00', format='%H:%M') && time_of_day<as.POSIXct('19:00', format='%H:%M'),FALSE, TRUE)
-        )
+        before_sunrise = ifelse(time_of_day>as.POSIXct('05:00', format='%H:%M'), TRUE, FALSE),
+        after_dawn = ifelse(time_of_day>as.POSIXct('19:00', format='%H:%M'), TRUE, FALSE),
+        night = (after_dawn | before_sunrise)
+        ) %>%
+        arrange(a)
 
 sea_norm <- filter(sea, Latitude != 0, Longitude !=0 ) %>%
         mutate(
@@ -30,13 +33,16 @@ sea_norm <- filter(sea, Latitude != 0, Longitude !=0 ) %>%
                 ),
             dt = parse_date_time(Occurred.Date.or.Date.Range.Start, orders="mdy hms")+{ifelse(grepl('PM$', Occurred.Date.or.Date.Range.Start), 12*3600, 0) },
             time_of_day =as.POSIXct(strftime(dt, format='%H:%M'), format='%H:%M'),
-            night = ifelse(time_of_day>as.POSIXct('05:00', format='%H:%M') && time_of_day<as.POSIXct('19:00', format='%H:%M'),FALSE, TRUE)
-        )
+            before_sunrise = ifelse(time_of_day>as.POSIXct('05:00', format='%H:%M'), TRUE, FALSE),
+            after_dawn = ifelse(time_of_day>as.POSIXct('19:00', format='%H:%M'), TRUE, FALSE),
+            night = (after_dawn | before_sunrise)
+        ) %>%
+        arrange(a)
 
 library(ggplot2)
 
 #plot(select(san_norm,nx,ny))
 #plot(select(sea_norm,nx,ny))
 
-ggplot(data=sea_norm, mapping=aes(x=nx,y=ny)) +   geom_jitter(aes(alpha=a, color=type))
-ggplot(data=san_norm, mapping=aes(x=nx,y=ny)) +   geom_jitter(aes(alpha=a, color=type))
+ggplot(data=sea_norm, mapping=aes(x=nx,y=ny)) +   geom_jitter(aes(alpha=a, color=type)) + guides(alpha=FALSE)
+ggplot(data=san_norm, mapping=aes(x=nx,y=ny)) +   geom_jitter(aes(alpha=a, color=type)) + guides(alpha=FALSE)
